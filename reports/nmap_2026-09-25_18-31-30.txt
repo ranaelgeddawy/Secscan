@@ -1,1 +1,0 @@
-# Nmap 7.99 scan initiated Fri Sep 25 18:31:31 2026 as: /usr/lib/nmap/nmap --privileged -sV -sC -oN reports/nmap_2026-09-25_18-31-30.txt 192.168.32.130
