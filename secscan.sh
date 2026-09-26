@@ -101,17 +101,10 @@ decide_services() {
 
 generate_report() {
     echo -e "${YELLOW}[*] Generating final report...${NC}"
-    REPORT_FILE="$REPORT_DIR/summary_$SCAN_DATE.txt"
+    mkdir -p "$REPORT_DIR"
 
+    # 1. findings_<date>.txt (Findings only)
     {
-        echo "============================================="
-        echo "  Security Assessment Report"
-        echo "============================================="
-        echo ""
-        echo "Target: $TARGET"
-        echo "Date: $SCAN_DATE"
-        echo "Open Ports: $OPEN_PORTS"
-        echo ""
         echo "--- Findings ---"
         echo ""
 
@@ -139,11 +132,11 @@ generate_report() {
             echo ""
         fi
 
-        if grep -q "X-Powered-By" "$REPORT_DIR/nmap_$SCAN_DATE.txt"; then
+        if grep -q "Apache" "$REPORT_DIR/nmap_$SCAN_DATE.txt"; then
             echo "[!] HTTP Version Disclosure"
-            echo "    Evidence: $(grep 'X-Powered-By' "$REPORT_DIR/nmap_$SCAN_DATE.txt" | head -1)"
-            echo "    Risk: Information disclosure helps attackers."
-            echo "    Recommendation: Remove version headers."
+            echo "    Evidence: $(grep 'Apache' "$REPORT_DIR/nmap_$SCAN_DATE.txt" | head -1)"
+            echo "    Risk: Information disclosure helps attackers fingerprint the server."
+            echo "    Recommendation: Remove version headers from HTTP responses."
             echo ""
         fi
 
@@ -162,13 +155,23 @@ generate_report() {
             echo "    Recommendation: Disable Telnet and use SSH instead."
             echo ""
         fi
+    } > "$REPORT_DIR/findings_$SCAN_DATE.txt"
 
+    # 2. summary_<date>.txt (Target + Date + Open Ports only)
+    {
+        echo "============================================="
+        echo "  Security Assessment Report"
+        echo "============================================="
         echo ""
-        echo "--- Nmap Scan ---"
-        cat "$REPORT_DIR/nmap_$SCAN_DATE.txt"
-    } > "$REPORT_FILE"
+        echo "Target: $TARGET"
+        echo "Date: $SCAN_DATE"
+        echo "Open Ports: $OPEN_PORTS"
+        echo ""
+        echo "See findings_$SCAN_DATE.txt for detailed findings."
+        echo "See nmap_$SCAN_DATE.txt for full Nmap scan."
+    } > "$REPORT_DIR/summary_$SCAN_DATE.txt"
 
-    echo -e "${GREEN}[+] Report saved to: $REPORT_FILE${NC}"
+    echo -e "${GREEN}[+] Reports saved to: $REPORT_DIR/${NC}"
 }
 
 generate_html_report() {
@@ -203,10 +206,26 @@ generate_html_report() {
             echo "<span class='risk'>Risk: Attackers can identify vulnerable SSH versions.</span><br>"
             echo "<span class='rec'>Recommendation: Update SSH.</span></div>"
         fi
+        if grep -q "Apache" "$REPORT_DIR/nmap_$SCAN_DATE.txt"; then
+            echo "<div class='finding'><b>[!] HTTP Version Disclosure</b><br>"
+            echo "<span class='risk'>Risk: Information disclosure helps attackers fingerprint the server.</span><br>"
+            echo "<span class='rec'>Recommendation: Remove version headers.</span></div>"
+        fi
 
+        if grep -q "VRFY" "$REPORT_DIR/nmap_$SCAN_DATE.txt"; then
+            echo "<div class='finding'><b>[!] SMTP VRFY Enabled</b><br>"
+            echo "<span class='risk'>Risk: Attackers can enumerate valid email addresses.</span><br>"
+            echo "<span class='rec'>Recommendation: Disable VRFY in Postfix.</span></div>"
+        fi
+
+        if grep -q "telnet" "$REPORT_DIR/nmap_$SCAN_DATE.txt"; then
+            echo "<div class='finding'><b>[!] Telnet Service Enabled</b><br>"
+            echo "<span class='risk'>Risk: Telnet sends data in plain text, including credentials.</span><br>"
+            echo "<span class='rec'>Recommendation: Disable Telnet and use SSH instead.</span></div>"
+        fi
         echo "</body></html>"
     } > "$HTML_FILE"
-
+         
     echo -e "${GREEN}[+] HTML report saved to: $HTML_FILE${NC}"
 }
 
