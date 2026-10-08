@@ -171,6 +171,16 @@ Unauthorized scanning is illegal.
 
 ---
 
+### Execution
+
+![Execution](Execution.png)
+
+### HTML Report
+
+![HTML Report](html-report.png)
+
+---
+
 ## 👩‍💻 Author
 
 **Rana Elgeddawy**
